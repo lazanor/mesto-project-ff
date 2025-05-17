@@ -17,7 +17,7 @@
   margin: 0;
   cursor: pointer;
 }
-
+ 
 .popup__close:hover {
   opacity: 0.6;
 }
