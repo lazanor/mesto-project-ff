@@ -4,12 +4,19 @@
 
 # Сборка и запуск
 
+Релизная сборка:
+
 ```
  npm run build
 
 ```
 
+Сборка для разработки:
+
+```
 npm run dev
+
+```
 
 # Credits
 made by lazanor 

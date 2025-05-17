@@ -1,7 +1,7 @@
 import './pages/index.css';
 import {initialCards} from './cards.js';
-import { initCards, createCard, viewImage } from './components/card.js';
-import { openPopup, openProfilePopup, closePopup, clearPopupFields } from './components/modal.js';
+import { createCard } from './components/card.js';
+import { openPopup, closePopup, handleEscape, handleMouseOverlayClick } from './components/modal.js';
 
 // DOM узлы
 /** Найдем нужные нам узлы */
@@ -10,47 +10,6 @@ const placesList = content.querySelector(".places__list");
 const newCardPopup = document.querySelector(".popup_type_new-card");
 const editProfilePopup = document.querySelector(".popup_type_edit");
 const imagePopup = document.querySelector(".popup_type_image");
-
-
-
-/** 
-
-+-----------------------------------------------------+
-|                                                     |
-| Набор вспомогательных функций для обработки событий |
-|                                                     |
-+-----------------------------------------------------+
-
-*/  
-
-  /** Обработка нажатия Escape */
-  function handleEscape(evt) {
-    if (evt.key === 'Escape') {
-      const openedPopup = document.querySelector('.popup_is-opened');
-      if (openedPopup) {
-        openedPopup.classList.remove('popup_is-opened');
-      }
-    }
-  }
-
-  /** Обработка клика на оверлей */
-  function handleMouseOverlayClick(evt) {
-    const openedPopup = document.querySelector('.popup_is-opened');
-    if (openedPopup) {
-      if (!evt.composedPath().includes(openedPopup.querySelector('.popup__content')))
-      {
-        openedPopup.classList.remove('popup_is-opened');
-      }
-    }
-  }
-
-/**
----------------------------------------
-  КОНЕЦ БЛОКА ВСПОМОГАТЕЛЬНЫХ ФУНКЦИЙ
----------------------------------------
- */
-
-
 
 /** 
 
@@ -61,7 +20,7 @@ const imagePopup = document.querySelector(".popup_type_image");
 +-------------------+
 
 */
-function initButtons() {
+const initButtons = () => {
   /** Инициируем кнопки */
   const cardAddButton = content.querySelector(".profile__add-button");
   const profileEditButton = content.querySelector(".profile__edit-button");
@@ -79,10 +38,13 @@ function initButtons() {
   /** Добавим слушателей для закрытия попапов */
   newCardCloseButton.addEventListener("click", () => closePopup(newCardPopup));
   profileEditCloseButton.addEventListener("click", () => closePopup(editProfilePopup));
-  imageCardCloseButton.addEventListener("click", () => closePopup(imagePopup));
+  imageCardCloseButton.addEventListener("click", () => closePopup(imagePopup)); 
 
-  /** Добавим слушаетль для обработки Escape */
-  document.addEventListener('keydown', handleEscape);
+  //
+  /** Отдельно очистка полей */
+  const clearPopupFields = (popup) => {
+    popup.querySelectorAll(".popup__input").forEach((item) => (item.value = ""));
+  }
 
   /**
   ---------------------------------------
@@ -94,14 +56,17 @@ function initButtons() {
 
   const newCardForm = document.forms['new-place'];
 
-  function addNewCard(evt) {
+
+
+  const addNewCard = (evt) => {
     evt.preventDefault();    
     const placeName = newCardForm.elements['place-name'].value;
     const placePictureLink = newCardForm.elements.link.value;
 
-    const cardElement = createCard(placeName, placePictureLink, viewImage);
+    const cardElement = createCard(placeName, placePictureLink, viewImage, likeCard);
     placesList.prepend(cardElement);
     closePopup(newCardPopup);
+    clearPopupFields(newCardPopup);
   }
   
   /** Добавим слушатель для кнопки сохранения новой карточки */
@@ -113,6 +78,17 @@ function initButtons() {
   ---------------------------------------
  */
 
+  //Открываем попап редактирования профиле
+  const openProfilePopup = (obj) => {    
+    openPopup(obj);
+    const profileForm = document.forms['edit-profile'];
+    let profileName = profileForm.elements.name;
+    let profileDescription = profileForm.elements.description;
+    profileName.value = document.querySelector('.profile__title').textContent;
+    profileDescription.value = document.querySelector('.profile__description').textContent;
+    
+  }
+
   //Подключение формы редактирования профиля
   const profileForm = document.forms['edit-profile'];
   let profileName = profileForm.elements.name;
@@ -121,11 +97,14 @@ function initButtons() {
   profileName.value = content.querySelector('.profile__title').textContent;
   profileDescription.value = content.querySelector('.profile__description').textContent;
 
-  function submitEditProfile(evt, editProfilePopup, profileName, profileDescription){
+
+
+  const submitEditProfile = (evt, editProfilePopup, profileName, profileDescription) => {
     evt.preventDefault();
     content.querySelector('.profile__title').textContent = profileName;
     content.querySelector('.profile__description').textContent = profileDescription;    
     closePopup(editProfilePopup);
+    clearPopupFields(editProfilePopup);
   }
 
   profileForm.addEventListener('submit', (evt) => submitEditProfile(evt, editProfilePopup, profileName.value, profileDescription.value));
@@ -138,9 +117,37 @@ function initButtons() {
 ---------------------------------------
  */
 
+// Функция открытия картинки
+
+const viewImage = (link, name) => {  
+  openPopup(imagePopup);
+  const image = imagePopup.querySelector('.popup__image');
+  image.src = link;
+  image.alt = `Фотография места: ${name}`;
+}
+
+// Функция лайка карточки
+
+const likeCard = (likeIcon) => {  
+  likeIcon.classList.toggle('card__like-button_is-active');
+}
+
+// Вывести карточки на страницу
+const initCards = (collection, placesList) => {
+  collection.forEach((item) => {
+    const cardElement = createCard(
+      item.name, 
+      item.link, 
+      viewImage, 
+      likeCard
+    );
+    placesList.append(cardElement);
+  });
+}
+
+
+
 
 
 initButtons();
 initCards(initialCards, placesList);
-
-export { handleMouseOverlayClick }
