@@ -1,8 +1,17 @@
 import "./pages/index.css";
-import { createCard, likeCard, delCard } from "./components/card.js";
+import { createCard, likeCard, delCard, markCardAsLiked, markCardAsUnliked } from "./components/card.js";
 import { openPopup, closePopup } from "./components/modal.js";
-import { clearValidation, enableValidation } from "./components/validarion.js";
-import { config, apiProfileURL, apiCardURL, apiToken } from "./api.js";
+import { clearValidation, enableValidation } from "./components/validation.js";
+import { apiProfileURL, apiCardURL, apiToken, getUser, getCards, newCard, updateProfile, updateProfileAvatar } from "./components/api.js";
+
+const config = {
+  formSelector: '.popup__form',
+  inputSelector: '.popup__input',
+  submitButtonSelector: '.popup__button',
+  inactiveButtonClass: 'popup__button_disabled',
+  inputErrorClass: 'popup__input_type_error',
+  errorClass: 'popup__error_visible'
+}
 
 // DOM узлы
 /** Найдем нужные нам узлы */
@@ -53,7 +62,8 @@ const initButtons = () => {
 
   /** Добавим слушателей для открытия попапов */
   cardAddButton.addEventListener("click", () => {
-    openPopup(newCardPopup);
+    newCardForm.reset;
+    openPopup(newCardPopup);    
     clearValidation(newCardPopup, config);
   });
   profileEditButton.addEventListener("click", () =>
@@ -92,26 +102,9 @@ const initButtons = () => {
     evt.preventDefault();
     const placeName = newCardForm.elements["place-name"].value;
     const placePictureLink = newCardForm.elements.link.value;
-
+    newCardSafeButton.textContent = 'Сохранение...';
     //отправим на сервер
-    fetch(apiCardURL, {
-      method: 'POST',
-      headers: {
-        authorization: apiToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: placeName,
-        link: placePictureLink
-      })
-    })
-    .then(res => {
-      if (res.ok) {        
-        newCardSafeButton.textContent = 'Сохранение...';
-        return res.json();
-      } 
-      return Promise.reject(`Ошибка запроса: ${res.status}`);
-    })
+    newCard(placeName, placePictureLink)
     .then((result) => {
       //Добавим новую карточку
       const cardElement = createCard(
@@ -122,13 +115,11 @@ const initButtons = () => {
         viewImage,
         likeCard,
         delCard,
-        1,
-        apiCardURL,
-        apiToken
+        1
       );
-      placesList.prepend(cardElement);
-      newCardSafeButton.textContent = 'Сохранить';
+      placesList.prepend(cardElement);      
     })
+    .finally(newCardSafeButton.textContent = 'Сохранить')
     .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));
 
     closePopup(newCardPopup);
@@ -144,23 +135,20 @@ const initButtons = () => {
   ---------------------------------------
  */
 
+  //Подключение формы редактирования профиля
+  const profileForm = document.forms["edit-profile"];
+  const profileName = profileForm.elements.name;
+  const profileDescription = profileForm.elements.description;
+
   //Открываем попап редактирования профиле
   const openProfilePopup = (obj) => {
     openPopup(obj);
     clearValidation(obj, config);
-    const profileForm = document.forms["edit-profile"];
-    let profileName = profileForm.elements.name;
-    let profileDescription = profileForm.elements.description;
     profileName.value = document.querySelector(".profile__title").textContent;
     profileDescription.value = document.querySelector(
       ".profile__description"
     ).textContent;
-  };
-
-  //Подключение формы редактирования профиля
-  const profileForm = document.forms["edit-profile"];
-  let profileName = profileForm.elements.name;
-  let profileDescription = profileForm.elements.description;
+  };  
 
   const submitEditProfile = (
     evt,
@@ -171,34 +159,16 @@ const initButtons = () => {
     evt.preventDefault();
     
     // Отправим на сервер
-    
-    fetch(apiProfileURL, {
-      method: 'PATCH',
-      headers: {
-        authorization: apiToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: profileName,
-        about: profileDescription
-      })
-    })
-    .then(res => {
-      if (res.ok) {        
-        editProfileSafeButton.textContent = 'Сохранение...';
-        return res.json();
-      } 
-      return Promise.reject(`Ошибка запроса: ${res.status}`);
-    })
+    editProfileSafeButton.textContent = 'Сохранение...';
+    updateProfile(profileName, profileDescription)
     .then(result => {      
       content.querySelector(".profile__title").textContent = result.name;
-      content.querySelector(".profile__description").textContent = result.about;
-      editProfileSafeButton.textContent = 'Сохранить';
+      content.querySelector(".profile__description").textContent = result.about; 
+      closePopup(editProfilePopup);
+      profileForm.reset();     
     })
-    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));
-
-    closePopup(editProfilePopup);
-    profileForm.reset();
+    .finally(editProfileSafeButton.textContent = 'Сохранить')
+    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));    
   };
 
   profileForm.addEventListener("submit", (evt) =>
@@ -222,32 +192,16 @@ const initButtons = () => {
     editAvatarPopup
   ) => {
     evt.preventDefault();
+    editAvatarSafeButton.textContent = 'Сохранение...';
     // Отправим на сервер
-    fetch(`${apiProfileURL}/avatar`, {
-      method: 'PATCH',
-      headers: {
-        authorization: apiToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        avatar: avatarForm.elements.link.value
-      })
-    })
-    .then(res => {
-      if (res.ok) {        
-        editAvatarSafeButton.textContent = 'Сохранение...';
-        return res.json();
-      } 
-      return Promise.reject(`Ошибка запроса: ${res.status}`);
-    })
+    updateProfileAvatar(avatarForm.elements.link.value)
     .then(result => {
-      document.querySelector(".profile__image").style.backgroundImage = `url(${result.avatar})`;
-      editAvatarSafeButton.textContent = 'Сохранить';
+      document.querySelector(".profile__image").style.backgroundImage = `url(${result.avatar})`;            
+      closePopup(editAvatarPopup);
+      profileForm.reset();
     })
-    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));
-
-    closePopup(editAvatarPopup);
-    profileForm.reset();
+    .finally(editAvatarSafeButton.textContent = 'Сохранить')
+    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));    
   }
 
   avatarForm.addEventListener("submit", (evt) =>
@@ -276,89 +230,40 @@ const viewImage = (link, name) => {
 };
 
 // Вывести карточки на страницу
-const initCards = (placesList) => {
-  fetch(apiCardURL,{
-    headers: {
-      authorization: apiToken
+const initCards = (placesList, user, cardsData) => {
+  cardsData.forEach((item) => {
+    const cardElement = createCard(
+      item._id,
+      item.name,
+      item.link,
+      item.likes.length,
+      viewImage,
+      likeCard,
+      delCard,
+      (user._id === item.owner._id)
+    );
+    placesList.append(cardElement);
+    //Проставим сердечки там где мы уже лайкали
+    if (item.likes.some(userItem => userItem._id === user._id)) {
+      markCardAsLiked(cardElement);
     }
-  })
-  .then(res => {
-    if (res.ok) {                
-      return res.json();
-    } 
-    return Promise.reject(`Ошибка запроса: ${res.status}`);
-  })
-  .then((result) => {
-    //console.log(result);
-    result.forEach((item) => {
-      const cardElement = createCard(
-        item._id,
-        item.name,
-        item.link,
-        item.likes.length,
-        viewImage,
-        likeCard,
-        delCard,
-        (user._id === item.owner._id),
-        apiCardURL,
-        apiToken
-      );
-      placesList.append(cardElement);
-      //Проставим сердечки там где мы уже лайкали
-      if (item.likes.some(userItem => userItem._id === user._id)) {
-        cardElement.querySelector('.card__like-button').classList.add('card__like-button_is-active');
-      }
-    });
-  })
-  .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));
-  
+  });  
 };
 
-/**
- * ---------------------------------------
- * ФУНКЦИИ ДЛЯ ЗАБОР ДАННЫХ С СЕРВЕРА
- * ---------------------------------------
- */
-
-const getUser = (url, token) => {
-  return fetch(url,{
-    headers: {
-      authorization: token
-    }
-  })
-  .then(res => {
-    if (res.ok) {                
-      return res.json();
-    } 
-    return Promise.reject(`Ошибка запроса: ${res.status}`);
-  })
-  .then((result) => {    
-    user = result;
-    document.querySelector(".profile__title").textContent = result.name;
-    document.querySelector(".profile__description").textContent = result.about;
-    document.querySelector(".profile__image").style.backgroundImage = `url(${result.avatar})`;
-    return result;
-  })
-  .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));
-}
-
-
-
-/**
- * ---------------------------------------
- * ЗАКОНЧИЛИ С СЕРВЕРОМ
- * ---------------------------------------
- */
-
+//Инициируем кнопки
 initButtons();
-let user = null;
-getUser(apiProfileURL, apiToken)
-.then(res => {
-  user = res;
-  //console.log(user._id);
-  initCards(placesList);
-});
 
+//Выполняем запросы
+Promise.all([getUser(), getCards()])
+.then(([userData, cardsData]) => {
+  document.querySelector(".profile__title").textContent = userData.name;
+  document.querySelector(".profile__description").textContent = userData.about;
+  document.querySelector(".profile__image").style.backgroundImage = `url(${userData.avatar})`;
+  initCards(placesList, userData, cardsData);
+})
+.catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));
+
+//Инициируем валидацию
 enableValidation(config);
 
 

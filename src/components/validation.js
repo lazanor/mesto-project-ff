@@ -32,6 +32,16 @@ const enableValidation = (config) => {
     //errorElement.classList.remove('form__input-error_active');
     errorElement.textContent = '';
   }
+
+  const diactivateButton = (buttonElement, inactiveButtonClass) => {
+    buttonElement.classList.add(inactiveButtonClass);
+    buttonElement.disabled = true;
+  }
+
+  const activateButton = (buttonElement, inactiveButtonClass) => {
+    buttonElement.classList.remove(inactiveButtonClass);
+    buttonElement.disabled = false;
+  }
   
   const hasInvalidInput = (inputList) => {
     return inputList.some((inputElement) => {
@@ -43,10 +53,10 @@ const enableValidation = (config) => {
   const toggleButtonState = (inputList, buttonElement, inactiveButtonClass) => {
     if (hasInvalidInput(inputList)) {
       //console.log('has input errors');
-      buttonElement.classList.add(inactiveButtonClass);
+      diactivateButton(buttonElement, inactiveButtonClass);
     } else {
       //console.log('no input errors');
-      buttonElement.classList.remove(inactiveButtonClass);
+      activateButton(buttonElement, inactiveButtonClass);
     }
   };
   
@@ -67,11 +77,11 @@ const enableValidation = (config) => {
   const clearValidation = (formElement, config) => {
     //console.log('вызов очистки валидации');
     const inputList = Array.from(formElement.querySelectorAll(config.inputSelector))
-    inputList.forEach((inputElement) => {
-      inputElement.value = '';
-      inputElement.classList.remove(config.inputErrorClass);
-      const errorElement = formElement.querySelector(`${config.inputSelector}_type_${inputElement.name}-error`);
-      errorElement.textContent = '';
+    const buttonElement = formElement.querySelector(config.submitButtonSelector);
+    diactivateButton(buttonElement, config.inactiveButtonClass);
+    inputList.forEach((inputElement) => {      
+      inputElement.value = '';      
+      hideInputError(formElement, inputElement, config);
     })
   }
   
