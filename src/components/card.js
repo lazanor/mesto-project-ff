@@ -70,6 +70,12 @@ const markCardAsUnliked = (cardElement) => {
   cardElement.querySelector('.card__like-button').classList.remove('card__like-button_is-active');
 }
 
+const setLikeStatus = (card, user, cardElement) => {
+  if (card.likes.some(userItem => userItem._id === user._id)) {
+    markCardAsLiked(cardElement);
+  }
+}
+
 // Функция лайка карточки
 const likeCard = (cardID, cardElement) => {
   if (isCardLiked(cardElement)) {
@@ -102,4 +108,4 @@ const delCard = (card, cardID) => {
   ---------------------------------------
    */
 
-export { createCard, likeCard, delCard, markCardAsLiked, markCardAsUnliked };
+export { createCard, likeCard, delCard, setLikeStatus };

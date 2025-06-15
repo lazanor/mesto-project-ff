@@ -79,8 +79,7 @@ const enableValidation = (config) => {
     const inputList = Array.from(formElement.querySelectorAll(config.inputSelector))
     const buttonElement = formElement.querySelector(config.submitButtonSelector);
     diactivateButton(buttonElement, config.inactiveButtonClass);
-    inputList.forEach((inputElement) => {      
-      inputElement.value = '';      
+    inputList.forEach((inputElement) => {
       hideInputError(formElement, inputElement, config);
     })
   }

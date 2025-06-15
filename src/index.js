@@ -1,5 +1,5 @@
 import "./pages/index.css";
-import { createCard, likeCard, delCard, markCardAsLiked, markCardAsUnliked } from "./components/card.js";
+import { createCard, likeCard, delCard, setLikeStatus } from "./components/card.js";
 import { openPopup, closePopup } from "./components/modal.js";
 import { clearValidation, enableValidation } from "./components/validation.js";
 import { apiProfileURL, apiCardURL, apiToken, getUser, getCards, newCard, updateProfile, updateProfileAvatar } from "./components/api.js";
@@ -62,13 +62,18 @@ const initButtons = () => {
 
   /** Добавим слушателей для открытия попапов */
   cardAddButton.addEventListener("click", () => {
-    newCardForm.reset;
+    newCardForm.reset();
     openPopup(newCardPopup);    
     clearValidation(newCardPopup, config);
   });
-  profileEditButton.addEventListener("click", () =>
-    openProfilePopup(editProfilePopup)
-  );
+  profileEditButton.addEventListener("click", () => {
+    openPopup(editProfilePopup);
+    clearValidation(editProfilePopup, config);
+    profileName.value = document.querySelector(".profile__title").textContent;
+    profileDescription.value = document.querySelector(
+      ".profile__description"
+    ).textContent;
+  });
 
   avatarEditButton.addEventListener("click", () => {
     //console.log('edit ava click');
@@ -86,7 +91,13 @@ const initButtons = () => {
   );
   imageCardCloseButton.addEventListener("click", () => closePopup(imagePopup));
 
-  //
+  const setSavingStatus = (buttonElement, saving) => {
+    if (saving) {
+      buttonElement.textContent = 'Сохранение...';
+    } else {
+      buttonElement.textContent = 'Сохранить';
+    }
+  }
 
   /**
   ---------------------------------------
@@ -102,7 +113,7 @@ const initButtons = () => {
     evt.preventDefault();
     const placeName = newCardForm.elements["place-name"].value;
     const placePictureLink = newCardForm.elements.link.value;
-    newCardSafeButton.textContent = 'Сохранение...';
+    setSavingStatus(newCardSafeButton, 1);
     //отправим на сервер
     newCard(placeName, placePictureLink)
     .then((result) => {
@@ -117,13 +128,14 @@ const initButtons = () => {
         delCard,
         1
       );
-      placesList.prepend(cardElement);      
+      placesList.prepend(cardElement);
+      closePopup(newCardPopup);
+      newCardForm.reset();
     })
-    .finally(newCardSafeButton.textContent = 'Сохранить')
+    .finally(setSavingStatus(newCardSafeButton, 0))
     .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));
 
-    closePopup(newCardPopup);
-    newCardForm.reset();
+    
   };
 
   /** Добавим слушатель для кнопки сохранения новой карточки */
@@ -140,16 +152,7 @@ const initButtons = () => {
   const profileName = profileForm.elements.name;
   const profileDescription = profileForm.elements.description;
 
-  //Открываем попап редактирования профиле
-  const openProfilePopup = (obj) => {
-    openPopup(obj);
-    clearValidation(obj, config);
-    profileName.value = document.querySelector(".profile__title").textContent;
-    profileDescription.value = document.querySelector(
-      ".profile__description"
-    ).textContent;
-  };  
-
+  //Подтверждаем редактирование профиля
   const submitEditProfile = (
     evt,
     editProfilePopup,
@@ -159,7 +162,7 @@ const initButtons = () => {
     evt.preventDefault();
     
     // Отправим на сервер
-    editProfileSafeButton.textContent = 'Сохранение...';
+    setSavingStatus(editProfileSafeButton, 1);
     updateProfile(profileName, profileDescription)
     .then(result => {      
       content.querySelector(".profile__title").textContent = result.name;
@@ -167,7 +170,7 @@ const initButtons = () => {
       closePopup(editProfilePopup);
       profileForm.reset();     
     })
-    .finally(editProfileSafeButton.textContent = 'Сохранить')
+    .finally(setSavingStatus(editProfileSafeButton, 0))
     .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));    
   };
 
@@ -192,7 +195,7 @@ const initButtons = () => {
     editAvatarPopup
   ) => {
     evt.preventDefault();
-    editAvatarSafeButton.textContent = 'Сохранение...';
+    setSavingStatus(editAvatarSafeButton, 1);
     // Отправим на сервер
     updateProfileAvatar(avatarForm.elements.link.value)
     .then(result => {
@@ -200,7 +203,7 @@ const initButtons = () => {
       closePopup(editAvatarPopup);
       profileForm.reset();
     })
-    .finally(editAvatarSafeButton.textContent = 'Сохранить')
+    .finally(setSavingStatus(editAvatarSafeButton, 0))
     .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));    
   }
 
@@ -244,9 +247,7 @@ const initCards = (placesList, user, cardsData) => {
     );
     placesList.append(cardElement);
     //Проставим сердечки там где мы уже лайкали
-    if (item.likes.some(userItem => userItem._id === user._id)) {
-      markCardAsLiked(cardElement);
-    }
+    setLikeStatus(item, user, cardElement);
   });  
 };
 
