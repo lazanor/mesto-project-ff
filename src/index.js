@@ -132,8 +132,8 @@ const initButtons = () => {
       closePopup(newCardPopup);
       newCardForm.reset();
     })
-    .finally(setSavingStatus(newCardSafeButton, 0))
-    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));
+    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error))    
+    .finally(setSavingStatus(newCardSafeButton, 0));
 
     
   };
@@ -170,8 +170,8 @@ const initButtons = () => {
       closePopup(editProfilePopup);
       profileForm.reset();     
     })
-    .finally(setSavingStatus(editProfileSafeButton, 0))
-    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));    
+    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error))
+    .finally(setSavingStatus(editProfileSafeButton, 0));
   };
 
   profileForm.addEventListener("submit", (evt) =>
@@ -202,9 +202,9 @@ const initButtons = () => {
       document.querySelector(".profile__image").style.backgroundImage = `url(${result.avatar})`;            
       closePopup(editAvatarPopup);
       profileForm.reset();
-    })
-    .finally(setSavingStatus(editAvatarSafeButton, 0))
-    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error));    
+    })    
+    .catch(error => console.log('Ошибка. Запрос не выполнен. ' + error))
+    .finally(setSavingStatus(editAvatarSafeButton, 0));
   }
 
   avatarForm.addEventListener("submit", (evt) =>
